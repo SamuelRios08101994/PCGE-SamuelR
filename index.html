@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<title>Libro de Caja — PCGE</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#16302A">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Libro Caja">
+<style>
+  :root{
+    --ink:#1C1B18;
+    --paper:#F6F2E9;
+    --paper-2:#EFE9DB;
+    --ledger:#16302A;
+    --ledger-2:#1F4238;
+    --gold:#C89B3C;
+    --gold-2:#A87F2C;
+    --brick:#A7442F;
+    --brick-2:#8B3626;
+    --line: rgba(28,27,24,0.12);
+    --shadow: 0 8px 24px rgba(22,48,42,0.18);
+    --radius: 14px;
+    font-size: 16px;
+  }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; }
+  body{
+    background: var(--ledger);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    min-height: 100vh;
+    display:flex;
+    justify-content:center;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .phone{
+    width:100%;
+    max-width:460px;
+    min-height:100vh;
+    background: var(--paper);
+    display:flex;
+    flex-direction:column;
+    position:relative;
+    overflow:hidden;
+  }
+
+  /* ---------- HEADER ---------- */
+  header{
+    background: linear-gradient(135deg, var(--ledger) 0%, var(--ledger-2) 100%);
+    color: var(--paper);
+    padding: 22px 20px 26px;
+    position:relative;
+  }
+  header::after{
+    content:"";
+    position:absolute; left:0; right:0; bottom:-1px; height:14px;
+    background-image: radial-gradient(circle at 10px 0, var(--paper) 6px, transparent 7px);
+    background-size: 20px 14px;
+    background-repeat: repeat-x;
+  }
+  .brand{
+    display:flex; align-items:baseline; gap:8px;
+  }
+  .brand .mark{ font-family: Georgia, "Iowan Old Style", serif; font-size:1.6rem; font-weight:700; letter-spacing:.2px;}
+  .brand .sub{ font-size:.72rem; letter-spacing:.14em; text-transform:uppercase; color: var(--gold); font-weight:600;}
+  .balance-check{
+    margin-top:16px;
+    display:flex; align-items:center; justify-content:space-between;
+    background: rgba(246,242,233,0.08);
+    border:1px solid rgba(246,242,233,0.18);
+    border-radius: 10px;
+    padding:10px 14px;
+  }
+  .balance-check .lbl{ font-size:.72rem; color: rgba(246,242,233,0.7); text-transform:uppercase; letter-spacing:.08em;}
+  .balance-check .val{ font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size:1.05rem; font-weight:600;}
+  .val.ok{ color:#8FD4A8; }
+  .val.bad{ color:#F0A18E; }
+
+  /* ---------- CONTENT ---------- */
+  main{
+    flex:1;
+    overflow-y:auto;
+    padding: 18px 16px 100px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .view{ display:none; }
+  .view.active{ display:block; animation: fade .18s ease; }
+  @keyframes fade{ from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:none;} }
+
+  .card{
+    background:#fff;
+    border:1px solid var(--line);
+    border-radius: var(--radius);
+    padding:16px;
+    margin-bottom:14px;
+    box-shadow: 0 1px 2px rgba(22,48,42,0.04);
+  }
+  h2.section-title{
+    font-family: Georgia, "Iowan Old Style", serif;
+    font-size:1.15rem;
+    margin:2px 0 14px;
+    color: var(--ledger);
+  }
+  .field{ margin-bottom:14px; position:relative; }
+  .field label{
+    display:block; font-size:.72rem; font-weight:700; text-transform:uppercase;
+    letter-spacing:.06em; color:#6b6659; margin-bottom:6px;
+  }
+  .field input[type=text], .field input[type=number], .field textarea{
+    width:100%; border:1.5px solid var(--line); border-radius:10px;
+    padding:11px 12px; font-size:1rem; font-family:inherit; color:var(--ink);
+    background: var(--paper);
+  }
+  .field input:focus, .field textarea:focus{ outline:none; border-color: var(--ledger-2); }
+  .field .hint{ font-size:.78rem; color:#8a8578; margin-top:5px; min-height:1em; }
+  .field .hint.found{ color: var(--ledger-2); font-weight:600; }
+  .field .hint.miss{ color: var(--brick); font-weight:600; }
+
+  .suggestions{
+    position:absolute; left:0; right:0; top:100%; margin-top:4px;
+    background:#fff; border:1px solid var(--line); border-radius:10px;
+    max-height:220px; overflow-y:auto; box-shadow: var(--shadow);
+    z-index:20; display:none;
+  }
+  .suggestions.show{ display:block; }
+  .suggestions div{
+    padding:10px 12px; font-size:.92rem; border-bottom:1px solid var(--line);
+    display:flex; gap:8px;
+  }
+  .suggestions div:last-child{ border-bottom:none; }
+  .suggestions div:active, .suggestions div.hi{ background: var(--paper-2); }
+  .suggestions .code{ font-family: ui-monospace, monospace; font-weight:700; color: var(--ledger-2); flex-shrink:0; }
+
+  .toggle-group{ display:flex; gap:8px; }
+  .toggle-btn{
+    flex:1; padding:12px 8px; border-radius:10px; border:1.5px solid var(--line);
+    background:var(--paper); font-size:.86rem; font-weight:600; color:#6b6659; text-align:center;
+    cursor:pointer;
+  }
+  .toggle-btn.active.debe{ background: var(--ledger); color:#fff; border-color:var(--ledger); }
+  .toggle-btn.active.haber{ background: var(--brick); color:#fff; border-color:var(--brick); }
+
+  .btn-primary{
+    width:100%; padding:15px; border:none; border-radius:12px;
+    background: var(--gold); color: var(--ledger);
+    font-size:1rem; font-weight:800; letter-spacing:.02em;
+    cursor:pointer; box-shadow: 0 4px 14px rgba(200,155,60,0.4);
+  }
+  .btn-primary:active{ transform: translateY(1px); }
+  .btn-ghost{
+    width:100%; padding:12px; border-radius:10px; border:1.5px solid var(--line);
+    background:transparent; color:#6b6659; font-size:.86rem; font-weight:600; margin-top:10px;
+  }
+
+  table{ width:100%; border-collapse:collapse; font-size:.86rem; }
+  th{ text-align:left; font-size:.68rem; text-transform:uppercase; letter-spacing:.06em; color:#8a8578; padding:6px 4px; border-bottom:1.5px solid var(--line); }
+  td{ padding:8px 4px; border-bottom:1px solid var(--line); vertical-align:top; }
+  td.num, th.num{ text-align:right; font-family: ui-monospace, monospace; }
+  td.debe-col{ color: var(--ledger-2); font-weight:700; }
+  td.haber-col{ color: var(--brick); font-weight:700; }
+  .row-total td{ font-weight:800; border-top:2px solid var(--ink); border-bottom:none; }
+  .muted{ color:#8a8578; }
+  .code-pill{ font-family: ui-monospace, monospace; font-size:.74rem; background:var(--paper-2); padding:1px 6px; border-radius:5px; color: var(--ledger-2); font-weight:700; }
+
+  .empty{
+    text-align:center; padding:40px 16px; color:#8a8578;
+  }
+  .empty .icon{ font-size:2rem; margin-bottom:8px; }
+
+  .diario-line{ display:flex; justify-content:space-between; align-items:flex-start; padding:12px 0; border-bottom:1px solid var(--line); gap:10px; }
+  .diario-line:last-child{ border-bottom:none; }
+  .diario-line .meta{ font-size:.72rem; color:#8a8578; margin-top:2px; }
+  .diario-line .glosa{ font-size:.82rem; color:#4a463c; margin-top:2px; }
+  .diario-line .amt{ font-family: ui-monospace, monospace; font-weight:800; font-size:.95rem; white-space:nowrap; }
+
+  .stat-line{ display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--line); font-size:.9rem; }
+  .stat-line:last-child{ border-bottom:none; }
+  .stat-line .amt{ font-family: ui-monospace, monospace; font-weight:700; }
+  .stat-line.total{ font-weight:800; border-top:2px solid var(--ink); border-bottom:none; margin-top:4px; padding-top:10px; }
+  .stat-line.total .amt{ font-size:1.05rem; }
+  .stat-line.result{ background: var(--paper-2); margin: 6px -8px; padding:12px 8px; border-radius:10px; border-bottom:none; }
+
+  .toast{
+    position:fixed; left:50%; bottom:96px; transform:translateX(-50%) translateY(20px);
+    background: var(--ledger); color:#fff; padding:12px 18px; border-radius:10px;
+    font-size:.88rem; font-weight:600; box-shadow: var(--shadow);
+    opacity:0; pointer-events:none; transition: all .25s ease; z-index:100;
+    max-width:88%; text-align:center;
+  }
+  .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+
+  /* ---------- BOTTOM NAV ---------- */
+  nav{
+    position:absolute; left:0; right:0; bottom:0;
+    background:#fff; border-top:1px solid var(--line);
+    display:flex; padding: 6px 4px calc(6px + env(safe-area-inset-bottom));
+    box-shadow: 0 -4px 14px rgba(0,0,0,0.05);
+  }
+  nav button{
+    flex:1; background:none; border:none; padding:8px 2px 6px; cursor:pointer;
+    display:flex; flex-direction:column; align-items:center; gap:3px;
+    color:#a29c8c; font-family:inherit;
+  }
+  nav button svg{ width:21px; height:21px; }
+  nav button span{ font-size:.62rem; font-weight:700; letter-spacing:.02em; }
+  nav button.active{ color: var(--ledger); }
+  nav button.active svg{ stroke: var(--ledger); }
+
+  ::-webkit-scrollbar{ width:0; height:0; }
+</style>
+</head>
+<body>
+<div class="phone">
+
+  <header>
+    <div class="brand">
+      <span class="mark">Libro de Caja</span>
+      <span class="sub">PCGE</span>
+    </div>
+    <div class="balance-check">
+      <span class="lbl">Activo = Pasivo + Patrimonio</span>
+      <span class="val ok" id="checkVal">S/ 0.00</span>
+    </div>
+  </header>
+
+  <main>
+
+    <!-- VIEW: REGISTRAR -->
+    <section class="view active" id="view-registrar">
+      <div class="card">
+        <h2 class="section-title">Nuevo registro</h2>
+
+        <div class="field">
+          <label>Cuenta contable</label>
+          <input type="text" id="cuentaInput" placeholder="Busca por código o nombre (ej. caja, 101)" autocomplete="off">
+          <div class="suggestions" id="cuentaSugg"></div>
+          <div class="hint" id="cuentaHint"></div>
+        </div>
+
+        <div class="field">
+          <label>Contra-cuenta (con la que hace match)</label>
+          <input type="text" id="contraInput" placeholder="Busca por código o nombre" autocomplete="off">
+          <div class="suggestions" id="contraSugg"></div>
+          <div class="hint" id="contraHint"></div>
+        </div>
+
+        <div class="field">
+          <label>Monto (S/)</label>
+          <input type="number" id="montoInput" placeholder="0.00" step="0.01" min="0" inputmode="decimal">
+        </div>
+
+        <div class="field">
+          <label>La cuenta contable...</label>
+          <div class="toggle-group">
+            <div class="toggle-btn debe active" id="btnDebe">Recibe (Debe)</div>
+            <div class="toggle-btn haber" id="btnHaber">Entrega (Haber)</div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Observación</label>
+          <textarea id="obsInput" rows="2" placeholder="Ej. Ingreso por saldo restante de compras"></textarea>
+        </div>
+
+        <button class="btn-primary" id="btnRegistrar">▶  Registrar</button>
+      </div>
+
+      <div class="card">
+        <h2 class="section-title" style="font-size:.95rem;">Respaldo de tus datos</h2>
+        <div class="muted" style="font-size:.8rem; margin-bottom:10px;">
+          Tus registros viven solo en este celular. Si vas a cambiar de equipo o formatearlo, exporta un respaldo primero.
+        </div>
+        <button class="btn-ghost" id="btnExportar">⬇ Exportar respaldo (.json)</button>
+        <button class="btn-ghost" id="btnImportar">⬆ Importar respaldo</button>
+        <input type="file" id="fileImportar" accept="application/json" style="display:none;">
+      </div>
+    </section>
+
+    <!-- VIEW: DIARIO -->
+    <section class="view" id="view-diario">
+      <div class="card">
+        <h2 class="section-title">Libro Diario</h2>
+        <div id="diarioList"></div>
+      </div>
+    </section>
+
+    <!-- VIEW: BALANCE -->
+    <section class="view" id="view-balance">
+      <div class="card">
+        <h2 class="section-title">Balance de Comprobación</h2>
+        <div style="overflow-x:auto;">
+        <table id="balanceTable">
+          <thead><tr><th>Cuenta</th><th class="num">Debe</th><th class="num">Haber</th></tr></thead>
+          <tbody id="balanceBody"></tbody>
+        </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- VIEW: RESULTADOS -->
+    <section class="view" id="view-resultados">
+      <div class="card">
+        <h2 class="section-title">Estado de Resultados</h2>
+        <div id="resultadosBody"></div>
+      </div>
+    </section>
+
+    <!-- VIEW: SITUACION -->
+    <section class="view" id="view-situacion">
+      <div class="card">
+        <h2 class="section-title">Situación Financiera</h2>
+        <div id="situacionBody"></div>
+      </div>
+    </section>
+
+  </main>
+
+  <div class="toast" id="toast"></div>
+
+  <nav>
+    <button class="active" data-view="registrar">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+      <span>Registrar</span>
+    </button>
+    <button data-view="diario">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V4a1 1 0 0 0-1-1H6.5A2.5 2.5 0 0 0 4 5.5v14Z"/><path d="M8 7h8M8 11h8"/></svg>
+      <span>Diario</span>
+    </button>
+    <button data-view="balance">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+      <span>Balance</span>
+    </button>
+    <button data-view="resultados">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 20V10M12 20V4M20 20v-7"/></svg>
+      <span>Resultados</span>
+    </button>
+    <button data-view="situacion">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 21h18M5 21V10l7-6 7 6v11M9 21v-6h6v6"/></svg>
+      <span>Situación</span>
+    </button>
+  </nav>
+
+</div>
+
+<script>
+/* ================= DATOS: PLAN DE CUENTAS (PCGE 2019, cuentas de detalle) ================= */
+/* Formato: [codigo, nombre, elemento] */
+const PLAN = [["101","Caja","1"],["102","Fondos fijos","1"],["1031","Efectivo en tránsito","1"],["1032","Cheques en tránsito","1"],["1041","Cuentas corrientes operativas","1"],["1042","Cuentas corrientes para fines específicos","1"],["1051","Otro equivalentes de efectivo","1"],["1061","Depósitos de ahorro","1"],["1062","Depósitos a plazo","1"],["1071","Fondos en garantía","1"],["1072","Fondos retenidos por mandato de la autoridad","1"],["1073","Otros fondos sujetos a restricción","1"],["11111","Costo","1"],["11112","Valor Razonable","1"],["11121","Costo","1"],["11122","Valor Razonable","1"],["11131","Costo","1"],["11132","Valor Razonable","1"],["11141","Costo","1"],["11142","Valor Razonable","1"],["11151","Costo","1"],["11152","Valor Razonable","1"],["11211","Costo","1"],["11212","Valor Razonable","1"],["11311","Costo","1"],["11312","Valor Razonable","1"],["11321","Costo","1"],["11322","Valor Razonable","1"],["1211","No emitidas","1"],["1212","Emitidas en cartera","1"],["1213","En cobranza","1"],["1214","En descuento","1"],["122","Anticipos de clientes","1"],["1232","En cartera","1"],["1233","En cobranza","1"],["1234","En descuento","1"],["1311","No emitidas","1"],["1312","En cartera","1"],["1313","En cobranza","1"],["1314","En descuento","1"],["1321","Anticipos recibidos","1"],["1331","En cartera","1"],["1332","En cobranza","1"],["1333","En descuento","1"],["1411","Préstamos","1"],["1412","Adelanto de remuneraciones","1"],["1413","Entregas a rendir cuenta","1"],["1419","Otras cuentas por cobrar al personal","1"],["1421","Suscripciones por cobrar a socios o accionistas","1"],["1422","Préstamos","1"],["1431","Préstamos","1"],["1432","Adelanto de dietas","1"],["1433","Entregas a rendir cuenta","1"],["149","Diversas","1"],["1611","Con garantía","1"],["1612","Sin garantía","1"],["1621","Compañías aseguradoras","1"],["1622","Transportadoras","1"],["1623","Servicios públicos","1"],["1624","Tributos","1"],["1629","Otras","1"],["1631","Intereses","1"],["1632","Regalías","1"],["1633","Dividendos","1"],["1641","Préstamos de instituciones financieras","1"],["1642","Préstamos de instituciones no financieras","1"],["1643","Depósitos en garantía por alquileres","1"],["1649","Otros depósitos en garantía","1"],["1651","Inversión mobiliaria","1"],["1652","Propiedades de inversión","1"],["1653","Propiedad, planta y equipo","1"],["1654","Intangibles","1"],["1655","Activos biológicos","1"],["1659","Otros activos inmovilizados","1"],["16611","Costo","1"],["16612","Valor razonable","1"],["16621","Costo","1"],["16622","Valor razonable","1"],["1671","Pagos a cuenta del impuesto a la renta","1"],["1672","Pagos a cuenta de ITAN","1"],["1673","IGV por acreditar en compras","1"],["1674","IGV por acreditar no domiciliados","1"],["1675","Obras por impuestos","1"],["1691","Entregas a rendir cuenta a terceros","1"],["1699","Otras cuentas por cobrar diversas","1"],["1711","Con garantía","1"],["1712","Sin garantía","1"],["1731","Intereses","1"],["1732","Regalías","1"],["1733","Dividendos","1"],["1741","Préstamos de instituciones financieras","1"],["1742","Préstamos de instituciones no financieras","1"],["1743","Depósitos en garantía por alquileres","1"],["1749","Otros depósitos en garantía","1"],["1751","Inversión mobiliaria","1"],["1752","Propiedades de inversión","1"],["1753","Propiedad, planta y equipo","1"],["1754","Intangibles","1"],["1755","Activos biológicos","1"],["1759","Otros activos inmovilizados","1"],["17611","Costo","1"],["17612","Valor razonable","1"],["17621","Costo","1"],["17622","Valor razonable","1"],["179","Otras cuentas por cobrar diversas","1"],["181","Costos financieros","1"],["182","Seguros","1"],["183","Alquileres","1"],["184","Primas pagadas por opciones","1"],["185","Mantenimiento de activos inmovilizados","1"],["189","Otros gastos contratados por anticipado","1"],["1911","Facturas, boletas y otros comprobantes por cobrar","1"],["1913","Letras por cobrar","1"],["1921","Facturas, boletas y otros comprobantes por cobrar","1"],["1923","Letras por cobrar","1"],["1931","Personal","1"],["1932","Accionistas (o socios)","1"],["1933","Directores","1"],["1939","Diversas","1"],["1941","Préstamos","1"],["1942","Reclamaciones a terceros","1"],["1943","Intereses, regalías y dividendos","1"],["1944","Depósitos otorgados en garantía","1"],["1945","Venta de activo inmovilizado","1"],["1946","Activos por instrumentos financieros","1"],["1949","Otras cuentas por cobrar diversas","1"],["1951","Préstamos","1"],["1953","Intereses, regalías y dividendos","1"],["1954","Depósitos otorgados en garantía","1"],["1955","Venta de activo inmovilizado","1"],["1956","Activos por instrumentos financieros","1"],["1959","Otras cuentas por cobrar diversas","1"],["20111","Costo","2"],["20114","Valor razonable","2"],["21111","Costo","2"],["21113","Costo de financiación","2"],["21114","Valor razonable","2"],["21511","Costo","2"],["221","Subproductos","2"],["222","Desechos y desperdicios","2"],["23111","Costo","2"],["23113","Costo de financiación","2"],["23511","Costo","2"],["24111","Costo","2"],["24114","Valor razonable","2"],["251","Materiales auxiliares","2"],["2521","Combustibles","2"],["2522","Lubricantes","2"],["2523","Energía","2"],["2524","Otros suministros","2"],["253","Repuestos","2"],["261","Envases","2"],["262","Embalajes","2"],["27111","Costo","2"],["27112","Revaluación","2"],["27114","Valor razonable","2"],["27121","Costo","2"],["27122","Revaluación","2"],["27123","Costos de financiación","2"],["27124","Valor razonable","2"],["27201","Costo","2"],["27202","Revaluación","2"],["27203","Costo de financiación","2"],["27204","Valor razonable","2"],["27211","Costo","2"],["27212","Revaluación","2"],["27213","Costo de financiación","2"],["27214","Valor razonable","2"],["27221","Costo","2"],["27222","Revaluación","2"],["27231","Costo","2"],["27232","Revaluación","2"],["27233","Costo de financiación","2"],["27241","Costo","2"],["27242","Revaluación","2"],["27233","Costo de financiación","2"],["27251","Costo","2"],["27252","Revaluación","2"],["27261","Costo","2"],["27262","Revaluación","2"],["27271","Costo","2"],["27272","Revaluación","2"],["27281","Costo","2"],["27282","Revaluación","2"],["27291","Costo","2"],["27292","Revaluación","2"],["27311","Costo","2"],["27312","Revaluación","2"],["27321","Costo","2"],["27322","Revaluación","2"],["27331","Costo","2"],["27332","Revaluación","2"],["27341","Costo","2"],["27342","Revaluación","2"],["27351","Costo","2"],["27352","Revaluación","2"],["27391","Costo","2"],["27392","Revaluación","2"],["27411","Costo","2"],["27413","Costos de financiación","2"],["27414","Valor razonable","2"],["27421","Costo","2"],["27423","Costos de financiación","2"],["27424","Valor razonable","2"],["27521","Costo","2"],["27522","Revaluación","2"],["27523","Costo de financiación","2"],["27601","Costo","2"],["27602","Revaluación","2"],["27603","Costo de financiación","2"],["27604","Valor razonable","2"],["27621","Costo","2"],["27622","Revaluación","2"],["27623","Costo de financiación","2"],["27631","Costo","2"],["27632","Revaluación","2"],["27633","Costo de financiación","2"],["27641","Costo","2"],["27642","Revaluación","2"],["27651","Costo","2"],["27652","Revaluación","2"],["27661","Costo","2"],["27662","Revaluación","2"],["27671","Costo","2"],["27672","Revaluación","2"],["27711","Costo","2"],["27712","Revaluación","2"],["27721","Costo","2"],["27722","Revaluación","2"],["27731","Costo","2"],["27732","Revaluación","2"],["27741","Costo","2"],["27742","Revaluación","2"],["27751","Costo","2"],["27752","Revaluación","2"],["27791","Costo","2"],["27792","Revaluación","2"],["27811","Costo","2"],["27813","Costo de financiación","2"],["27821","Costo","2"],["27823","Costo de financiación","2"],["27910","Planta productora en producción","2"],["27911","Planta productora en desarrollo","2"],["27912","Terrenos","2"],["27913","Edificaciones","2"],["27930","Plantas productoras en producción","2"],["27931","Planta productora en desarrollo","2"],["27932","Terrenos","2"],["27933","Edificaciones","2"],["27934","Maquinarias y equipos de explotación","2"],["27935","Unidades de transporte","2"],["27936","Muebles y enseres","2"],["27937","Equipos diversos","2"],["27938","Herramientas y unidades de reemplazo","2"],["27941","Concesiones, licencias y otros derechos","2"],["27942","Patentes y propiedad industrial","2"],["27943","Programas de computadora (software)","2"],["27944","Costos de exploración y desarrollo","2"],["27945","Fórmulas, diseños y prototipos","2"],["27949","Otros activos intangibles","2"],["27951","Activos biológicos en producción","2"],["27952","Activos biológicos en desarrollo","2"],["281","Mercaderías","2"],["284","Materias primas","2"],["285","Materiales auxiliares, suministros y repuestos","2"],["286","Envases y embalajes","2"],["29111","Costo","2"],["29211","Costo","2"],["29213","Costo de financiación","2"],["29251","Costo","2"],["2931","Subproductos","2"],["2932","Desechos y desperdicios","2"],["29411","Costo","2"],["29413","Costo de financiación","2"],["2945","Inventario de servicios en proceso","2"],["29511","Costo","2"],["2961","Materiales auxiliares","2"],["2962","Suministros","2"],["2963","Repuestos","2"],["2971","Envases","2"],["2972","Embalajes","2"],["2981","Mercaderías","2"],["2982","Materias primas","2"],["2983","Materiales auxiliares, suministros y repuestos","2"],["2984","Envases y embalajes","2"],["3011","Instrumentos financieros representativos de deuda","3"],["30221","Costo","3"],["30224","Valor razonable","3"],["3021","Certificados de suscripción preferente","3"],["30221","Costo","3"],["30224","Valor razonable","3"],["30225","Participación patrimonial","3"],["30231","Costo","3"],["30234","Valor razonable","3"],["30235","Participación patrimonial","3"],["30241","Costo","3"],["30244","Valor razonable","3"],["30245","Participación patrimonial","3"],["30281","Costo","3"],["30284","Valor razonable","3"],["30285","Participación patrimonial","3"],["30311","Costo","3"],["30314","Valor razonable","3"],["30321","Costo","3"],["30324","Valor razonable","3"],["30411","Costo","3"],["30414","Valor razonable","3"],["30415","Participación patrimonial","3"],["30421","Costo","3"],["30424","Valor razonable","3"],["30425","Participación patrimonial","3"],["30811","Costo","3"],["30814","Valor razonable","3"],["30821","Costo","3"],["30824","Valor razonable","3"],["31111","Costo","3"],["31112","Revaluación","3"],["31114","Valor razonable","3"],["31121","Costo","3"],["31122","Revaluación","3"],["31124","Valor razonable","3"],["31211","Costo","3"],["31212","Revaluación","3"],["31213","Costos de financiación","3"],["31214","Valor razonable","3"],["31311","Costo","3"],["31312","Revaluación","3"],["31313","Costos de financiación","3"],["31314","Valor razonable","3"],["32111","Costo","3"],["32112","Revaluación","3"],["32114","Valor razonable","3"],["32121","Costo","3"],["32122","Revaluación","3"],["32123","Costo de financiación","3"],["32124","Valor razonable","3"],["32201","Costo","3"],["32202","Revaluación","3"],["32203","Costo de financiación","3"],["32211","Costo","3"],["32212","Revaluación","3"],["32213","Costo de financiación","3"],["32221","Costo","3"],["32222","Revaluación","3"],["32231","Costo","3"],["32232","Revaluación","3"],["32233","Costo de financiación","3"],["32241","Costo","3"],["32242","Revaluación","3"],["32243","Costo de financiación","3"],["32251","Costo","3"],["32252","Revaluación","3"],["32261","Costo","3"],["32262","Revaluación","3"],["32271","Costo","3"],["32272","Revaluación","3"],["32281","Costo","3"],["32282","Revaluación","3"],["32301","Costo","3"],["32302","Revaluación","3"],["32321","Costo","3"],["32331","Costo","3"],["32332","Revaluación","3"],["32341","Costo","3"],["32342","Revaluación","3"],["32351","Costo","3"],["32352","Revaluación","3"],["32361","Costo","3"],["32362","Revaluación","3"],["33011","Costo","3"],["33012","Revaluación","3"],["33013","Costo de financiación","3"],["33014","Valor razonable","3"],["33021","Costo","3"],["33022","Revaluación","3"],["33023","Costo de financiación","3"],["33024","Valor razonable","3"],["33111","Costo","3"],["33112","Revaluación","3"],["33211","Costo","3"],["33212","Revaluación","3"],["33213","Costo de financiación","3"],["33241","Costo","3"],["33242","Revaluación","3"],["33243","Costo de financiación","3"],["33251","Costo","3"],["33252","Revaluación","3"],["33253","Costo de Financiación","3"],["33311","Costo","3"],["33312","Revaluación","3"],["33313","Costo de financiación","3"],["33411","Costo","3"],["33412","Revaluación","3"],["33421","Costo","3"],["33422","Revaluación","3"],["33511","Costo","3"],["33512","Revaluación","3"],["33521","Costo","3"],["33522","Revaluación","3"],["33611","Costo","3"],["33612","Revaluación","3"],["33621","Costo","3"],["33622","Revaluación","3"],["33631","Costo","3"],["33632","Revaluación","3"],["33641","Costo","3"],["33642","Revaluación","3"],["33691","Costo","3"],["33692","Revaluación","3"],["33711","Costo","3"],["33712","Revaluación","3"],["33721","Costo","3"],["33722","Revaluación","3"],["3381","Maquinaria y equipo de explotación","3"],["3382","Equipo de transporte","3"],["3383","Muebles y enseres","3"],["3386","Equipos diversos","3"],["3387","Herramientas y unidades de reemplazo","3"],["3391","Adecuación de terrenos","3"],["33921","Costo","3"],["33922","Costo de financiación","3"],["33931","Costo","3"],["33932","Costo de financiación","3"],["34111","Costo","3"],["34112","Revaluación","3"],["34121","Costo","3"],["34122","Revaluación","3"],["34191","Costo","3"],["34192","Revaluación","3"],["34211","Costo","3"],["34212","Revaluación","3"],["34221","Costo","3"],["34222","Revaluación","3"],["34311","Costo","3"],["34312","Revaluación","3"],["34411","Costo","3"],["34412","Revaluación","3"],["34413","Costo de financiación","3"],["34421","Costo","3"],["34422","Revaluación","3"],["34423","Costo de financiación","3"],["34511","Costo","3"],["34512","Revaluación","3"],["34521","Costo","3"],["34522","Revaluación","3"],["3471","Plusvalía mercantil","3"],["34911","Costo","3"],["34912","Revaluación","3"],["35111","Costo","3"],["35113","Costo de financiación","3"],["35114","Valor razonable","3"],["35121","Costo","3"],["35123","Costo de financiación","3"],["35124","Valor razonable","3"],["35211","Costo","3"],["35213","Costo de financiación","3"],["35214","Valor razonable","3"],["35221","Costo","3"],["35223","Costo de financiación","3"],["35224","Valor razonable","3"],["36111","Costo","3"],["36112","Revaluación","3"],["36121","Costo","3"],["36122","Revaluación","3"],["36123","Costo de financiación","3"],["36131","Costo","3"],["36132","Revaluación","3"],["36133","Costo de financiación","3"],["36211","Costo","3"],["36212","Revaluación","3"],["36221","Costo","3"],["36222","Revaluación","3"],["36223","Costo de financiación","3"],["36311","Costo","3"],["36312","Revaluación","3"],["36321","Costo","3"],["36322","Revaluación","3"],["36323","Costo de financiación","3"],["36331","Costo","3"],["36332","Revaluación","3"],["36333","Costo de financiación","3"],["36341","Costo","3"],["36342","Revaluación","3"],["36351","Costo","3"],["36352","Revaluación","3"],["36361","Costo","3"],["36362","Revaluación","3"],["36401","Costo","3"],["36402","Planta productora en producción - Revaluación","3"],["36403","Planta productora en producción - Costo de financiación","3"],["33404","Planta productora en producción - Valor razonable","3"],["36405","Planta productora en desarrollo - Costo","3"],["36406","Planta productora en desarrollo - Revaluación","3"],["36407","Planta productora en desarrollo - Costo de financiación","3"],["36408","Planta productora en desarrollo - Valor razonable","3"],["36411","Costo","3"],["36412","Revaluación","3"],["36421","Edificaciones - Costo","3"],["36422","Edificaciones - Revaluación","3"],["36423","Edificaciones - Costo de financiación","3"],["36424","Instalaciones - Costo","3"],["36425","Instalaciones - Revaluación","3"],["36426","Instalaciones - Costo de financiación","3"],["36427","Mejoras en locales arrendados - Costo","3"],["36428","Mejoras en locales arrendados - Revaluación","3"],["36429","Mejoras en locales arrendados - Costo de financiación","3"],["36431","Costo","3"],["36432","Revaluación","3"],["36433","Costo de financiación","3"],["36441","Costo","3"],["36442","Revaluación","3"],["36451","Costo","3"],["36452","Revaluación","3"],["36461","Costo","3"],["36462","Revaluación","3"],["36471","Herramientas - Costo","3"],["38472","Herramientas - Revaluación","3"],["38473","Unidades de reemplazo - costo","3"],["38474","Unidades de reemplazo - Revaluación","3"],["36491","Costo","3"],["36492","Revaluación","3"],["36511","Costo","3"],["36512","Revaluación","3"],["36521","Costo","3"],["36522","Revaluación","3"],["36531","Costo","3"],["36532","Revaluación","3"],["36541","Costo","3"],["36542","Revaluación","3"],["36543","Costo de financiación","3"],["36551","Costo","3"],["36552","Revaluación","3"],["3657","Plusvalía mercantil","3"],["36591","Costo","3"],["36592","Revaluación","3"],["36611","Costo","3"],["36613","Costo de financiación","3"],["36621","Costo","3"],["36622","Costo de financiación","3"],["36711","Costo","3"],["36721","Costo","3"],["36731","Costo","3"],["3711","Impuesto a la renta diferido – Patrimonio","3"],["3712","Impuesto a la renta diferido – Resultados","3"],["3721","Participaciones de los trabajadores diferidas – Patrimonio","3"],["3722","Participaciones de los trabajadores diferidas – Resultados","3"],["3731","Intereses no devengados en transacciones con terceros","3"],["3732","Intereses no devengados en medición a valor descontado","3"],["3811","Obras de arte","3"],["3812","Biblioteca","3"],["3813","Otros","3"],["3821","Monedas y joyas","3"],["3822","Bienes entregados en comodato","3"],["3823","Bienes recibidos en pago (adjudicados y realizables)","3"],["3829","Otros","3"],["39111","Costo","3"],["39112","Revaluación","3"],["39113","Costo de financiación","3"],["39211","Costo","3"],["39212","Revaluación","3"],["39213","Costo de financiación","3"],["39321","Costo","3"],["39322","Revaluación","3"],["39323","Costo de financiación","3"],["39331","Costo","3"],["39332","Revaluación","3"],["39333","Costo de financiación","3"],["39341","Costo","3"],["39342","Revaluación","3"],["39351","Costo","3"],["38352","Revaluación","3"],["39361","Costo","3"],["39362","Revaluación","3"],["39410","Plantas productoras","3"],["39411","Terrenos","3"],["39412","Edificaciones","3"],["39413","Maquinarias y equipos de explotación","3"],["39414","Unidades de transporte","3"],["39415","Equipos diversos","3"],["39520","Plantas productoras","3"],["39521","Edificaciones","3"],["39522","Instalaciones","3"],["39523","Mejoras en locales arrendados","3"],["39524","Maquinarias y equipos de explotación","3"],["39525","Unidades de transporte","3"],["39526","Muebles y enseres","3"],["39527","Equipos diversos","3"],["39528","Herramientas","3"],["39529","Unidades de reemplazo","3"],["39530","Plantas productoras","3"],["39531","Edificaciones","3"],["39532","Instalaciones","3"],["39533","Mejoras en locales arrendados","3"],["39534","Maquinarias y equipos de explotación","3"],["39535","Unidades de transporte","3"],["39536","Muebles y enseres","3"],["39537","Equipos diversos","3"],["39538","Herramientas y unidades de reemplazo","3"],["39540","Plantas productoras","3"],["39541","Edificaciones","3"],["39542","Maquinarias y equipos de explotación","3"],["39550","Plantas productoras","3"],["39611","Concesiones, licencias y otros derechos","3"],["39612","Patentes y propiedad industrial","3"],["39613","Programas de computadora (software)","3"],["39614","Costos de exploración y desarrollo","3"],["39615","Fórmulas, diseños y prototipos","3"],["39619","Otros activos intangibles","3"],["39621","Concesiones, licencias y otros derechos","3"],["39622","Patentes y propiedad industrial","3"],["39623","Programas de computadora (software)","3"],["39624","Costos de exploración y desarrollo","3"],["39625","Fórmulas, diseños y prototipos","3"],["39629","Otros activos intangibles","3"],["39633","Programas de computadora","3"],["39634","Costos de exploración","3"],["39635","Costos de desarrollo","3"],["39811","Activos biológicos en producción","3"],["40111","IGV – Cuenta propia","4"],["40112","IGV – Servicios prestados por no domiciliados","4"],["40113","IGV – Régimen de percepciones","4"],["40114","IGV – Régimen de retenciones","4"],["40115","IGV – Importaciones","4"],["40116","IGV – Destinado a operaciones gravadas","4"],["40117","IGV - Destinado a operaciones comunes","4"],["4012","Impuesto selectivo al consumo","4"],["40151","Derechos arancelarios","4"],["40152","Otros derechos arancelarios","4"],["40171","Renta de tercera categoría","4"],["40172","Renta de cuarta categoría","4"],["40173","Renta de quinta categoría","4"],["40174","Renta de no domiciliados","4"],["40175","Otras retenciones","4"],["40181","Impuesto a las transacciones financieras","4"],["40182","Impuesto a los juegos de casino y tragamonedas","4"],["40183","Tasas por la prestación de servicios públicos","4"],["40184","Regalías","4"],["40185","Impuesto a los dividendos","4"],["40186","Impuesto temporal a los activos netos","4"],["40189","Otros impuestos","4"],["402","Certificados tributarios","4"],["4031","ESSALUD","4"],["4032","ONP","4"],["4033","Contribución al SENATI","4"],["4034","Contribución al SENCICO","4"],["4039","Otras instituciones","4"],["405","Gobiernos regionales","4"],["40611","Impuesto al patrimonio vehicular","4"],["40612","Impuesto a las apuestas","4"],["40613","Impuesto a los juegos","4"],["40614","Impuesto de alcabala","4"],["40615","Impuesto predial","4"],["40616","Impuesto a los espectáculos públicos no deportivos","4"],["4062","Contribuciones","4"],["40631","Licencia de apertura de establecimientos","4"],["40632","Transporte público","4"],["40633","Estacionamiento de vehículos","4"],["40634","Servicios públicos o arbitrios","4"],["40635","Servicios administrativos o derechos","4"],["409","Otros costos administrativos e intereses","4"],["4111","Sueldos y salarios por pagar","4"],["4112","Comisiones por pagar","4"],["4113","Remuneraciones en especie por pagar","4"],["4114","Gratificaciones por pagar","4"],["4115","Vacaciones por pagar","4"],["413","Participaciones de los trabajadores por pagar","4"],["4151","Compensación por tiempo de servicios","4"],["4152","Adelanto de compensación por tiempo de servicios","4"],["4153","Pensiones y jubilaciones","4"],["417","Administradoras de fondos de pensiones","4"],["419","Otras remuneraciones y participaciones por pagar","4"],["4211","No emitidas","4"],["4212","Emitidas","4"],["422","Anticipos a proveedores","4"],["423","Letras por pagar","4"],["424","Honorarios por pagar","4"],["4311","No emitidas","4"],["4312","Emitidas","4"],["4321","Anticipos otorgados","4"],["4331","Letras por pagar","4"],["4341","Honorarios por pagar","4"],["4411","Préstamos","4"],["4412","Dividendos","4"],["4419","Otras cuentas por pagar","4"],["4421","Dietas","4"],["4429","Otras cuentas por pagar","4"],["4511","Instituciones financieras","4"],["4512","Otras entidades","4"],["452","Contratos de arrendamiento financiero","4"],["4531","Bonos emitidos","4"],["4532","Bonos titulizados","4"],["4533","Papeles comerciales","4"],["4539","Otras obligaciones","4"],["4541","Letras","4"],["4542","Papeles comerciales","4"],["4543","Bonos","4"],["4544","Pagarés","4"],["4545","Facturas conformadas","4"],["4549","Otras obligaciones financieras","4"],["45511","Instituciones financieras","4"],["45512","Otras entidades","4"],["4552","Contratos de arrendamiento financiero","4"],["45531","Bonos emitidos","4"],["45532","Bonos titulizados","4"],["45533","Papeles comerciales","4"],["45539","Otras obligaciones","4"],["45541","Letras","4"],["45542","Papeles comerciales","4"],["45543","Bonos","4"],["45544","Pagarés","4"],["45545","Facturas conformadas","4"],["45549","Otras obligaciones financieras","4"],["456","Préstamos con compromisos de recompra","4"],["461","Reclamaciones de terceros","4"],["4641","Instrumentos financieros primarios","4"],["46421","Cartera de negociación","4"],["46422","Instrumentos de cobertura","4"],["4651","Inversiones mobiliarias","4"],["4652","Propiedades de inversión","4"],["4653","Activos adquiridos en arrendamiento financiero","4"],["4654","Propiedad, planta y equipo","4"],["4655","Intangibles","4"],["4656","Activos biológicos","4"],["466","Participación de terceros en acuerdos conjuntos","4"],["467","Depósitos recibidos en garantía","4"],["4691","Subsidios gubernamentales","4"],["4692","Donaciones condicionadas","4"],["4699","Otras cuentas por pagar","4"],["471","Préstamos","4"],["472","Costos de financiación","4"],["473","Anticipos recibidos","4"],["474","Regalías","4"],["475","Dividendos","4"],["476","Depósitos recibidos en garantía","4"],["4771","Inversiones mobiliarias","4"],["4772","Inversiones inmobiliarias","4"],["4773","Activos adquiridos en arrendamiento financiero","4"],["4774","Propiedad, planta y equipo","4"],["4775","Intangibles","4"],["4776","Activos biológicos","4"],["4791","Otras cuentas por pagar diversas","4"],["481","Provisión para litigios","4"],["482","Provisión por desmantelamiento, retiro o rehabilitación del inmovilizado","4"],["483","Provisión para reestructuraciones","4"],["484","Provisión para protección y remediación del medio ambiente","4"],["485","Provisión para gastos de responsabilidad social","4"],["486","Provisión para garantías","4"],["487","Provisión por activos por derecho de uso","4"],["489","Otras provisiones","4"],["4911","Impuesto a la renta diferido – Patrimonio","4"],["4912","Impuesto a la renta diferido – Resultados","4"],["4921","Participaciones de los trabajadores diferidas – Patrimonio","4"],["4922","Participaciones de los trabajadores diferidas – Resultados","4"],["4931","Intereses no devengados en transacciones con terceros","4"],["4932","Intereses no devengados en medición a valor descontado","4"],["494","Ganancia en venta con arrendamiento financiero paralelo","4"],["495","Subsidios recibidos diferidos","4"],["496","Ingresos diferidos","4"],["497","Costos diferidos","4"],["5011","Acciones","5"],["5012","Participaciones","5"],["502","Acciones en tesorería","5"],["511","Acciones de inversión","5"],["512","Acciones de inversión en tesorería","5"],["521","Primas (descuento) de acciones","5"],["5221","Aportes","5"],["5222","Reservas","5"],["5223","Acreencias","5"],["5224","Utilidades","5"],["523","Reducciones de capital pendientes de formalización","5"],["561","Diferencia en cambio de inversiones permanentes en entidades extranjeras","5"],["562","Instrumentos financieros – Coberturas","5"],["5631","Ganancia","5"],["5632","Pérdida","5"],["5641","Ganancia","5"],["5642","Pérdida","5"],["5651","Ganancia","5"],["5652","Pérdida","5"],["57111","Adquisición directa","5"],["57112","Arrendamiento financiero","5"],["57121","Adquisición directa","5"],["57122","Arrendamiento financiero","5"],["5713","Intangibles","5"],["5714","Activos por derecho de uso - arrendamiento operativo","5"],["572","Excedente de revaluación – Acciones liberadas recibidas","5"],["573","Participación en excedente de revaluación – Inversiones en entidades relacionadas","5"],["581","Reinversión","5"],["582","Legal","5"],["583","Contractuales","5"],["584","Estatutarias","5"],["585","Facultativas","5"],["589","Otras reservas","5"],["5911","Utilidades acumuladas","5"],["5912","Ingresos de años anteriores","5"],["5921","Pérdidas acumuladas","5"],["5922","Gastos de años anteriores","5"],["6011","Mercaderías","6"],["602","Materias primas","6"],["6031","Materiales auxiliares","6"],["6032","Suministros","6"],["6033","Repuestos","6"],["6041","Envases","6"],["6042","Embalajes","6"],["60911","Transporte","6"],["60912","Seguros","6"],["60913","Derechos aduaneros","6"],["60914","Comisiones","6"],["60919","Otros costos","6"],["60921","Transporte","6"],["60922","Seguros","6"],["60923","Derechos aduaneros","6"],["60924","Comisiones","6"],["60925","Otros costos","6"],["60931","Transporte","6"],["60932","Seguros","6"],["60933","Derechos aduaneros","6"],["60934","Comisiones","6"],["60935","Otros costos","6"],["60941","Transporte","6"],["60942","Seguros","6"],["60943","Derechos aduaneros","6"],["60944","Comisiones","6"],["60945","Otros costos","6"],["6111","Mercaderías","6"],["6121","Materias primas","6"],["6131","Materiales auxiliares","6"],["6132","Suministros","6"],["6133","Repuestos","6"],["6141","Envases","6"],["6142","Embalajes","6"],["6211","Sueldos y salarios","6"],["6212","Comisiones","6"],["6213","Remuneraciones en especie","6"],["6214","Gratificaciones","6"],["6215","Vacaciones","6"],["622","Otras remuneraciones","6"],["623","Indemnizaciones al personal","6"],["624","Capacitación","6"],["625","Atención al personal","6"],["6271","Régimen de prestaciones de salud","6"],["6272","Régimen de pensiones - Aporte de empresa","6"],["6273","Seguro complementario de trabajo de riesgo, accidentes de trabajo y enfermedades profesionales","6"],["6274","Seguro de vida","6"],["6275","Seguros particulares de prestaciones de salud – EPS y otros particulares","6"],["6276","Caja de beneficios de seguridad social del pescador","6"],["6277","Contribuciones al SENATI","6"],["628","Retribuciones al directorio","6"],["6291","Compensación por tiempo de servicio","6"],["6292","Pensiones y jubilaciones","6"],["6293","Otros beneficios post-empleo","6"],["62941","Participación corriente","6"],["62942","Participación diferida","6"],["63111","De carga","6"],["63112","De pasajeros","6"],["6312","Correos","6"],["6313","Alojamiento","6"],["6314","Alimentación","6"],["6315","Otros gastos de viaje","6"],["6321","Administrativa","6"],["6322","Legal y tributaria","6"],["6323","Auditoría y contable","6"],["6324","Mercadotecnia","6"],["6325","Medioambiental","6"],["6326","Investigación y desarrollo","6"],["6327","Producción","6"],["6329","Otros","6"],["633","Producción encargada a terceros","6"],["6341","Propiedad de inversión","6"],["63421","Financiero","6"],["63432","Operativo","6"],["6343","Propiedad, planta y equipo","6"],["6344","Intangibles","6"],["6345","Activos biológicos","6"],["6351","Terrenos","6"],["6352","Edificaciones","6"],["6353","Maquinarias y equipos de explotación","6"],["6354","Equipo de transporte","6"],["6355","Muebles y enseres","6"],["6356","Equipos diversos","6"],["6361","Energía eléctrica","6"],["6362","Gas","6"],["6363","Agua","6"],["6364","Teléfono","6"],["6365","Internet","6"],["6366","Radio","6"],["6367","Cable","6"],["6371","Publicidad","6"],["6372","Publicaciones","6"],["6373","Relaciones públicas","6"],["638","Servicios de contratistas","6"],["6391","Gastos bancarios","6"],["6392","Gastos de laboratorio","6"],["6411","Impuesto general a las ventas y selectivo al consumo","6"],["6412","Impuesto a las transacciones financieras","6"],["6413","Impuesto temporal a los activos netos","6"],["6414","Impuesto a los juegos de casino y máquinas tragamonedas","6"],["6415","Regalías mineras","6"],["6416","Cánones","6"],["6419","Otros","6"],["642","Gobierno regional","6"],["6431","Impuesto predial","6"],["6432","Arbitrios municipales y seguridad ciudadana","6"],["6433","Impuesto al patrimonio vehicular","6"],["6434","Licencia de funcionamiento","6"],["6439","Otros","6"],["6442","Contribución al SENCICO","6"],["6443","Otros","6"],["6451","Intereses","6"],["6452","intereses - fraccionamiento","6"],["6453","Multas","6"],["6454","Costas y otros","6"],["651","Seguros","6"],["652","Regalías","6"],["653","Suscripciones","6"],["654","Licencias y derechos de vigencia","6"],["65511","Inversiones mobiliarias","6"],["65512","Propiedades de inversión","6"],["65513","Activos por derecho de uso - arrendamiento financiero","6"],["65514","Propiedad, planta y equipo","6"],["65515","Intangibles","6"],["65516","Activos biológicos","6"],["65521","Propiedades de inversión","6"],["65522","Activos por derecho de uso - Arrendamiento financiero","6"],["65523","Propiedad, planta y equipo","6"],["65524","Intangibles","6"],["65525","Activos biológicos","6"],["656","Suministros","6"],["658","Gestión medioambiental","6"],["6591","Donaciones","6"],["6592","Sanciones administrativas","6"],["6611","Mercaderías","6"],["6612","Productos terminados","6"],["66131","Propiedades de inversión","6"],["66132","Propiedad, planta y equipo","6"],["66133","Intangibles","6"],["66134","Activos biológicos","6"],["6621","Propiedades de inversión","6"],["6622","Activos biológicos","6"],["6711","Préstamos de instituciones financieras y otras entidades","6"],["6712","Contratos de arrendamiento financiero","6"],["6713","Emisión y colocación de instrumentos representativos de deuda y patrimonio","6"],["6714","Documentos vendidos o descontados","6"],["672","Pérdida por instrumentos financieros derivados","6"],["67311","Instituciones financieras","6"],["67312","Otras entidades","6"],["6732","Contratos de arrendamiento financiero","6"],["6733","Otros instrumentos financieros por pagar","6"],["6734","Documentos vendidos o descontados","6"],["6735","Obligaciones emitidas","6"],["6736","Obligaciones comerciales","6"],["6741","Pérdida en instrumentos vendidos","6"],["675","Descuentos concedidos por pronto pago","6"],["676","Diferencia de cambio","6"],["6771","Inversiones mantenidas para negociación","6"],["6772","Otras inversiones financieras","6"],["6773","Otros","6"],["6781","Participación en los resultados de subsidiarias y asociadas bajo el método del valor patrimonial","6"],["6782","Participaciones en negocios conjuntos","6"],["6791","Primas por opciones","6"],["6792","Gastos financieros en medición a valor descontado","6"],["6793","Gastos financieros en actualización de activos por derecho de uso","6"],["68111","Costo","6"],["68112","Revaluación","6"],["68113","Costo de financiación","6"],["682111","Costo","6"],["682112","Revaluación","6"],["682113","Costo de financiación","6"],["682211","Costo","6"],["682212","Revaluación","6"],["682213","Costo de financiación","6"],["682221","Costo","6"],["682222","Revaluación","6"],["682223","Costo de financiación","6"],["682231","Costo","6"],["682232","Revaluación","6"],["682251","Costo","6"],["682252","Revaluación","6"],["683111","Costo","6"],["683112","Revaluación","6"],["683121","Costo","6"],["683122","Revaluación","6"],["683131","Costo","6"],["683132","Revaluación","6"],["68315","Equipos diversos","6"],["683351","Costo","6"],["683152","Revaluación","6"],["68410","Plantas productoras","6"],["68411","Edificaciones","6"],["68412","Maquinarias y equipos de explotación","6"],["68413","Unidades de transporte","6"],["68414","Muebles y enseres","6"],["68415","Equipos diversos","6"],["68416","Herramientas y unidades de reemplazo","6"],["68420","Plantas productoras","6"],["68421","Edificaciones","6"],["68422","Maquinarias y equipos de explotación","6"],["68423","Unidades de transporte","6"],["68424","Muebles y enseres","6"],["68425","Equipos diversos","6"],["68426","Herramientas y unidades de reemplazo","6"],["68430","Plantas productoras","6"],["68431","Edificaciones","6"],["68432","Maquinarias y equipos de explotación","6"],["68511","Activos biológicos de origen animal","6"],["68512","Activos biológicos de origen vegetal","6"],["68521","Activos biológicos de origen animal","6"],["68522","Activos biológicos de origen vegetal","6"],["68611","Concesiones, licencias y otros derechos","6"],["68612","Patentes y propiedad industrial","6"],["68613","Programas de computadora (software)","6"],["68614","Costos de exploración y desarrollo","6"],["68615","Fórmulas, diseños y prototipos","6"],["68619","Otros activos intangibles","6"],["68621","Concesiones, licencias y otros derechos","6"],["68622","Patentes y propiedad industrial","6"],["68623","Programas de computadora (software)","6"],["68624","Costos de exploración y desarrollo","6"],["68625","Fórmulas, diseños y prototipos","6"],["68629","Otros activos intangibles","6"],["68711","Cuentas por cobrar comerciales – Terceros","6"],["68712","Cuentas por cobrar comerciales – Relacionadas","6"],["68713","Cuentas por cobrar al personal, a los accionistas (socios) y directores","6"],["68714","Cuentas por cobrar diversas – Terceros","6"],["68715","Cuentas por cobrar diversas – Relacionadas","6"],["68731","Inversiones a ser mantenidas hasta el vencimiento","6"],["68732","Instrumentos financieros representativos de derecho patrimonial","6"],["68812","Edificaciones","6"],["68813","Construcciones en curso","6"],["68820","Planta productora en producción","6"],["68821","Planta productora en desarrollo","6"],["68822","Terrenos","6"],["68823","Edificaciones","6"],["68824","Maquinarias y equipos de explotación","6"],["68825","Unidades de transporte","6"],["68826","Muebles y enseres","6"],["68827","Equipos diversos","6"],["68828","Herramientas y unidades de reemplazo","6"],["68830","Planta productora en producción","6"],["68831","Planta productora en desarrollo","6"],["68832","Terrenos","6"],["68833","Edificaciones","6"],["68834","Maquinarias y equipos de explotación","6"],["68835","Unidades de transporte","6"],["68836","Muebles y enseres","6"],["68837","Equipos diversos","6"],["68838","Herramientas y unidades de reemplazo","6"],["68841","Concesiones, licencias y otros derechos","6"],["68842","Patentes y propiedad industrial","6"],["68843","Programas de computadora (software)","6"],["68844","Costos de exploración y desarrollo","6"],["68845","Fórmulas, diseños y prototipos","6"],["68846","Otros activos intangibles","6"],["68847","Plusvalía mercantil","6"],["68891","Activos biológicos de origen animal","6"],["68892","Activos biológicos de origen vegetal","6"],["68911","Provisión para litigios – Costo","6"],["68912","Provisión para litigios – Actualización financiera","6"],["68921","Provisión por desmantelamiento, retiro o rehabilitación del inmovilizado – Costo","6"],["68922","Provisión por desmantelamiento, retiro o rehabilitación del inmovilizado – Actualización financiera","6"],["6893","Provisión para reestructuraciones","6"],["68941","Provisión para protección y remediación del medio ambiente – Costo","6"],["68942","Provisión para protección y remediación del medio ambiente – Actualización financiera","6"],["68961","Provisión para garantías – Costo","6"],["68962","Provisión para garantías – Actualización financiera","6"],["68971","Provisión por activos por derecho de uso arrendamiento operativo","6"],["68972","Provisión por activos por derecho de uso arrendamiento operativo - actualización financiera","6"],["6899","Otras provisiones","6"],["69111","Terceros","6"],["69112","Relacionadas","6"],["69121","Terceros","6"],["69122","Relacionadas","6"],["69211","Terceros","6"],["69212","Relacionadas","6"],["69221","Terceros","6"],["69222","Relacionadas","6"],["69231","Terceros","6"],["69232","Relacionadas","6"],["6924","Costos de producción no absorbido – Productos terminados","6"],["6925","Costo de ineficiencia – Productos terminados","6"],["69311","Terceros","6"],["69312","Relacionadas","6"],["69321","Terceros","6"],["69322","Relacionadas","6"],["69411","Terceros","6"],["69412","Relacionadas","6"],["69421","Terceros","6"],["69422","Relacionadas","6"],["6951","Mercaderías","6"],["6952","Productos terminados","6"],["6953","Subproductos, desechos y desperdicios","6"],["6954","Productos en proceso","6"],["6955","Materias primas","6"],["6956","Materiales auxiliares, suministros y repuestos","6"],["6957","Envases y embalajes","6"],["6958","Inventarios por recibir","6"],["70111","Terceros","7"],["70112","Relacionadas","7"],["7012","Mercaderías - venta local","7"],["70111","Terceros","7"],["70112","Relacionadas","7"],["70211","Terceros","7"],["70212","Relacionadas","7"],["70221","Terceros","7"],["70222","Relacionadas","7"],["70311","Terceros","7"],["70312","Relacionadas","7"],["70321","Terceros","7"],["70322","Relacionadas","7"],["70411","Terceros","7"],["70412","Relacionadas","7"],["70421","Terceros","7"],["70422","Relacionadas","7"],["70911","Terceros","7"],["70912","Relacionadas","7"],["70921","Terceros","7"],["70922","Relacionadas","7"],["70931","Terceros","7"],["70932","Relacionadas","7"],["70941","Terceros","7"],["70942","Relacionadas","7"],["70951","Terceros","7"],["70952","Relacionadas","7"],["70961","Terceros","7"],["70962","Relacionadas","7"],["7111","Productos terminados","7"],["7121","Subproductos","7"],["7122","Desechos y desperdicios","7"],["7131","Productos en proceso de manufactura","7"],["7141","Envases","7"],["7142","Embalajes","7"],["7151","Inventarios de servicios en proceso","7"],["7211","Edificaciones","7"],["7220","Planta productora","7"],["7221","Edificaciones","7"],["7222","Maquinarias y otros equipos de explotación","7"],["7223","Unidades de transporte","7"],["7224","Muebles y enseres","7"],["7225","Equipos diversos","7"],["7231","Programas de computadora (software)","7"],["7232","Costos de exploración y desarrollo","7"],["7233","Fórmulas, diseños y prototipos","7"],["7241","Activos biológicos en desarrollo de origen animal","7"],["7242","Activos biológicos en desarrollo de origen vegetal","7"],["72511","Plantas productoras en desarrollo","7"],["72512","Edificaciones","7"],["72521","Plantas productoras en desarrollo","7"],["72522","Edificaciones","7"],["72523","Maquinarias y otros equipos de explotación","7"],["7253","Costos de financiación – Intangibles","7"],["72541","Activos biológicos de origen animal","7"],["72542","Activos biológicos de origen vegetal","7"],["7311","Terceros","7"],["7312","Relacionadas","7"],["7411","Terceros","7"],["7412","Relacionadas","7"],["751","Servicios en beneficio del personal","7"],["752","Comisiones y corretajes","7"],["753","Regalías","7"],["7540","Plantas productoras","7"],["7541","Terrenos","7"],["7542","Edificaciones","7"],["7543","Maquinarias y equipos de explotación","7"],["7544","Unidades de transporte","7"],["7545","Equipos diversos","7"],["7551","Recuperación – Cuentas de cobranza dudosa","7"],["7552","Recuperación – Desvalorización de inventarios","7"],["7553","Recuperación – Desvalorización de inversiones mobiliarias","7"],["7561","Inversiones mobiliarias","7"],["7562","Propiedades de inversión","7"],["7563","Activos adquiridos en arrendamiento financiero","7"],["7564","Propiedad, planta y equipo","7"],["7565","Intangibles","7"],["7566","Activos biológicos","7"],["7571","Recuperación de deterioro de propiedades de inversión","7"],["7572","Recuperación de deterioro de propiedad, planta y equipo","7"],["7573","Recuperación de deterioro de intangibles","7"],["7574","Recuperación de deterioro de activos biológicos","7"],["7591","Subsidios gubernamentales","7"],["7592","Reclamos al seguro","7"],["7593","Donaciones","7"],["7594","Devoluciones tributarias","7"],["7599","Otros ingresos de gestión","7"],["7611","Mercaderías","7"],["7612","Productos terminados","7"],["76131","Propiedades de inversión","7"],["76132","Propiedad, planta y equipo","7"],["76133","Intangibles","7"],["76134","Activos biológicos","7"],["7621","Propiedades de inversión","7"],["7622","Activos biológicos","7"],["771","Ganancia por instrumento financiero derivado","7"],["7721","Depósitos en instituciones financieras","7"],["7722","Cuentas por cobrar comerciales","7"],["7723","Préstamos otorgados","7"],["7724","Inversiones a ser mantenidas hasta el vencimiento","7"],["7725","Instrumentos financieros representativos de derecho patrimonial","7"],["773","Dividendos","7"],["774","Ingresos en operaciones de factoraje (factoring)","7"],["775","Descuentos obtenidos por pronto pago","7"],["776","Diferencia en cambio","7"],["7771","Inversiones mantenidas para negociación","7"],["7772","Otras inversiones","7"],["7773","Otras","7"],["7781","Participación en los resultados de subsidiarias y asociadas bajo el método del valor patrimonial","7"],["7782","Ingresos por participaciones en negocios conjuntos","7"],["7792","Ingresos financieros en medición a valor descontado","7"],["781","Cargas cubiertas por provisiones","7"],["791","Cargas imputables a cuentas de costos y gastos","7"],["792","Gastos financieros imputables a cuentas de inventarios","7"],["801","Margen comercial","8"],["811","Producción de bienes","8"],["812","Producción de servicios","8"],["813","Producción de activo inmovilizado","8"],["821","Valor agregado","8"],["831","Excedente bruto (insuficiencia bruta) de explotación","8"],["841","Resultado de explotación","8"],["851","Resultado antes del impuesto a las ganancias","8"],["881","Impuesto a las ganancias – Corriente","8"],["882","Impuesto a las ganancias – Diferido","8"],["891","Utilidad","8"],["892","Pérdida","8"],["01","Bienes y valores entregados","0"],["02","Derechos sobre instrumentos financieros","0"],["03","Otras cuentas de orden deudoras","0"],["04","Contrapartida de cuentas de orden deudoras","0"],["06","Bienes y valores recibidos","0"],["07","Compromisos sobre instrumentos financieros","0"],["08","Otras cuentas de orden acreedoras","0"],["09","Contrapartida de cuentas de orden acreedoras","0"]];
+
+const PLAN_MAP = new Map(PLAN.map(p => [p[0], p]));
+
+/* ================= ESTADO ================= */
+let registros = [];               // {id, n, fecha, hora, cuenta, contra, monto, tipo, obs}
+const STORAGE_KEY = 'registros_caja_pcge';
+
+// Almacenamiento LOCAL del dispositivo (localStorage): los datos quedan
+// guardados en este celular/navegador, no dependen de ninguna cuenta externa.
+function cargarRegistros(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    registros = raw ? JSON.parse(raw) : [];
+  }catch(e){
+    registros = [];
+  }
+  renderAll();
+}
+
+function guardarRegistros(){
+  try{
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(registros));
+  }catch(e){
+    mostrarToast('No se pudo guardar en este dispositivo.');
+  }
+}
+
+/* ================= NAVEGACIÓN ================= */
+const views = ['registrar','diario','balance','resultados','situacion'];
+document.querySelectorAll('nav button').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    const v = btn.dataset.view;
+    views.forEach(x=>{
+      document.getElementById('view-'+x).classList.toggle('active', x===v);
+    });
+    document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('active', b===btn));
+    if(v!=='registrar') renderAll();
+  });
+});
+
+/* ================= AUTOCOMPLETE DE CUENTAS ================= */
+function setupBuscador(inputId, suggId, hintId, onPick){
+  const input = document.getElementById(inputId);
+  const sugg = document.getElementById(suggId);
+  const hint = document.getElementById(hintId);
+  let selected = null;
+
+  function search(q){
+    q = q.trim().toLowerCase();
+    if(!q){ sugg.classList.remove('show'); return; }
+    const starts = [];
+    const contains = [];
+    for(const p of PLAN){
+      const code = p[0], name = p[1].toLowerCase();
+      if(code.startsWith(q)) starts.push(p);
+      else if(name.includes(q)) contains.push(p);
+      if(starts.length + contains.length > 40) break;
+    }
+    const results = starts.concat(contains).slice(0,25);
+    if(!results.length){ sugg.innerHTML = '<div class="muted" style="padding:10px 12px;">Sin resultados</div>'; sugg.classList.add('show'); return; }
+    sugg.innerHTML = results.map(p =>
+      `<div data-code="${p[0]}"><span class="code">${p[0]}</span><span>${p[1]}</span></div>`
+    ).join('');
+    sugg.classList.add('show');
+  }
+
+  input.addEventListener('input', ()=>{
+    selected = null;
+    hint.textContent = '';
+    hint.className = 'hint';
+    search(input.value);
+  });
+  input.addEventListener('focus', ()=> search(input.value));
+  input.addEventListener('blur', ()=> setTimeout(()=> sugg.classList.remove('show'), 150));
+
+  sugg.addEventListener('mousedown', e=>{
+    const row = e.target.closest('[data-code]');
+    if(!row) return;
+    const p = PLAN_MAP.get(row.dataset.code);
+    input.value = p[0] + ' — ' + p[1];
+    selected = p[0];
+    hint.textContent = 'Código ' + p[0] + ' seleccionado';
+    hint.className = 'hint found';
+    sugg.classList.remove('show');
+    if(onPick) onPick(p[0]);
+  });
+
+  return { getCode: ()=> selected, reset: ()=>{ input.value=''; selected=null; hint.textContent=''; } };
+}
+
+const buscCuenta = setupBuscador('cuentaInput','cuentaSugg','cuentaHint');
+const buscContra = setupBuscador('contraInput','contraSugg','contraHint');
+
+/* ================= TOGGLE DEBE/HABER ================= */
+let tipoActual = 'debe';
+const btnDebe = document.getElementById('btnDebe');
+const btnHaber = document.getElementById('btnHaber');
+btnDebe.addEventListener('click', ()=>{ tipoActual='debe'; btnDebe.classList.add('active'); btnHaber.classList.remove('active'); });
+btnHaber.addEventListener('click', ()=>{ tipoActual='haber'; btnHaber.classList.add('active'); btnDebe.classList.remove('active'); });
+
+/* ================= TOAST ================= */
+let toastTimer;
+function mostrarToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=> t.classList.remove('show'), 2200);
+}
+
+/* ================= REGISTRAR ================= */
+document.getElementById('btnRegistrar').addEventListener('click', ()=>{
+  const cuenta = buscCuenta.getCode();
+  const contra = buscContra.getCode();
+  const monto = parseFloat(document.getElementById('montoInput').value);
+  const obs = document.getElementById('obsInput').value.trim();
+
+  if(!cuenta){ mostrarToast('Selecciona una cuenta contable de la lista.'); return; }
+  if(!contra){ mostrarToast('Selecciona una contra-cuenta de la lista.'); return; }
+  if(cuenta === contra){ mostrarToast('La cuenta y la contra-cuenta no pueden ser la misma.'); return; }
+  if(!monto || monto <= 0){ mostrarToast('Ingresa un monto mayor a 0.'); return; }
+
+  const now = new Date();
+  const reg = {
+    id: Date.now(),
+    n: registros.length + 1,
+    fecha: now.toISOString().slice(0,10),
+    hora: now.toTimeString().slice(0,8),
+    cuenta, contra, monto, tipo: tipoActual, obs
+  };
+  registros.push(reg);
+  guardarRegistros();
+
+  document.getElementById('montoInput').value = '';
+  document.getElementById('obsInput').value = '';
+  buscCuenta.reset();
+  buscContra.reset();
+  tipoActual='debe'; btnDebe.classList.add('active'); btnHaber.classList.remove('active');
+
+  mostrarToast('Registro N° ' + reg.n + ' guardado');
+  renderAll();
+});
+
+/* ================= CÁLCULOS CONTABLES ================= */
+function nombreDe(codigo){
+  const p = PLAN_MAP.get(codigo);
+  return p ? p[1] : codigo;
+}
+
+function computeBalances(){
+  const map = new Map();
+  function add(code, debe, haber){
+    if(!map.has(code)) map.set(code, {debe:0, haber:0});
+    const o = map.get(code);
+    o.debe += debe; o.haber += haber;
+  }
+  for(const r of registros){
+    if(r.tipo === 'debe'){ add(r.cuenta, r.monto, 0); add(r.contra, 0, r.monto); }
+    else { add(r.cuenta, 0, r.monto); add(r.contra, r.monto, 0); }
+  }
+  return map;
+}
+
+function sumPrefix(map, prefix, side){
+  let s = 0;
+  for(const [code, v] of map){
+    if(code.startsWith(prefix)) s += (side==='debe' ? v.debe : v.haber);
+  }
+  return s;
+}
+function creditNormal(map, prefix){
+  return sumPrefix(map, prefix, 'haber') - sumPrefix(map, prefix, 'debe');
+}
+function debitNormal(map, prefix){
+  return sumPrefix(map, prefix, 'debe') - sumPrefix(map, prefix, 'haber');
+}
+
+function fmt(n){
+  const v = Math.round((n + Number.EPSILON) * 100) / 100;
+  return (v<0 ? '-S/ ' : 'S/ ') + Math.abs(v).toLocaleString('es-PE', {minimumFractionDigits:2, maximumFractionDigits:2});
+}
+
+/* ================= RENDER ================= */
+function renderAll(){
+  renderDiario();
+  renderBalance();
+  const resultadoNeto = renderResultados();
+  renderSituacion(resultadoNeto);
+}
+
+function renderDiario(){
+  const cont = document.getElementById('diarioList');
+  if(!registros.length){
+    cont.innerHTML = '<div class="empty"><div class="icon">📖</div>Aún no hay movimientos.<br>Registra el primero desde la pestaña Registrar.</div>';
+    return;
+  }
+  const lineas = [];
+  [...registros].reverse().forEach(r=>{
+    const principal = { code:r.cuenta, side: r.tipo };
+    const contra = { code:r.contra, side: r.tipo==='debe' ? 'haber':'debe' };
+    [principal, contra].forEach(x=>{
+      lineas.push({
+        n:r.n, fecha:r.fecha, hora:r.hora, code:x.code, side:x.side, monto:r.monto, obs:r.obs
+      });
+    });
+  });
+  cont.innerHTML = lineas.map(l => `
+    <div class="diario-line">
+      <div>
+        <div><span class="code-pill">${l.code}</span> ${nombreDe(l.code)}</div>
+        <div class="glosa">${l.obs ? l.obs : '<span class="muted">Sin observación</span>'}</div>
+        <div class="meta">N° ${l.n} · ${l.fecha} ${l.hora.slice(0,5)}</div>
+      </div>
+      <div class="amt" style="color:${l.side==='debe' ? 'var(--ledger-2)' : 'var(--brick)'}">
+        ${l.side==='debe' ? 'Debe' : 'Haber'}<br>${fmt(l.monto)}
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderBalance(){
+  const map = computeBalances();
+  const body = document.getElementById('balanceBody');
+  if(!map.size){
+    body.innerHTML = '<tr><td colspan="3" class="empty">Sin movimientos aún.</td></tr>';
+    return;
+  }
+  const rows = [...map.entries()].sort((a,b)=> a[0].localeCompare(b[0]));
+  let totD=0, totH=0;
+  let html = rows.map(([code,v])=>{
+    totD += v.debe; totH += v.haber;
+    return `<tr>
+      <td><span class="code-pill">${code}</span><br><span class="muted" style="font-size:.78rem;">${nombreDe(code)}</span></td>
+      <td class="num debe-col">${v.debe ? fmt(v.debe) : '—'}</td>
+      <td class="num haber-col">${v.haber ? fmt(v.haber) : '—'}</td>
+    </tr>`;
+  }).join('');
+  html += `<tr class="row-total"><td>TOTAL</td><td class="num">${fmt(totD)}</td><td class="num">${fmt(totH)}</td></tr>`;
+  body.innerHTML = html;
+}
+
+function renderResultados(){
+  const map = computeBalances();
+  const cont = document.getElementById('resultadosBody');
+
+  const ventas = creditNormal(map,'70');
+  const descConc = debitNormal(map,'74');
+  const ventasNetas = ventas - descConc;
+  const descObt = creditNormal(map,'73');
+  const otrosIng = creditNormal(map,'75');
+  const varProd = creditNormal(map,'71');
+  const prodInm = creditNormal(map,'72');
+  const ganVR = creditNormal(map,'76');
+  const ingFin = creditNormal(map,'77');
+  const cargasCub = creditNormal(map,'78');
+  const totalIngresos = ventasNetas + descObt + otrosIng + varProd + prodInm + ganVR + ingFin + cargasCub;
+
+  const gastos = [
+    ['60  Compras', debitNormal(map,'60')],
+    ['61  Variación de existencias', debitNormal(map,'61')],
+    ['62  Gastos de personal', debitNormal(map,'62')],
+    ['63  Servicios prestados por terceros', debitNormal(map,'63')],
+    ['64  Gastos por tributos', debitNormal(map,'64')],
+    ['65  Otros gastos de gestión', debitNormal(map,'65')],
+    ['66  Pérdida por medición a valor razonable', debitNormal(map,'66')],
+    ['67  Gastos financieros', debitNormal(map,'67')],
+    ['68  Valuación y deterioro', debitNormal(map,'68')],
+    ['69  Costo de ventas', debitNormal(map,'69')],
+    ['79  Cargas imputables a costos y gastos', debitNormal(map,'79')],
+  ];
+  const totalGastos = gastos.reduce((s,g)=>s+g[1],0);
+  const resultadoAntes = totalIngresos - totalGastos;
+
+  const ingLines = [
+    ['70  Ventas', ventas],
+    ['(-) 74  Descuentos y bonif. concedidas', -descConc],
+  ];
+  const html = `
+    <div class="stat-line" style="font-weight:700; color:var(--ledger);">Ingresos</div>
+    ${ingLines.map(l=>`<div class="stat-line"><span>${l[0]}</span><span class="amt">${fmt(l[1])}</span></div>`).join('')}
+    <div class="stat-line" style="font-weight:700;"><span>Ventas netas</span><span class="amt">${fmt(ventasNetas)}</span></div>
+    ${[['73  Descuentos y bonif. obtenidas', descObt],['75  Otros ingresos de gestión', otrosIng],
+      ['71  Variación producción almacenada', varProd],['72  Producción de activo inmovilizado', prodInm],
+      ['76  Ganancia por valor razonable', ganVR],['77  Ingresos financieros', ingFin],
+      ['78  Cargas cubiertas por provisiones', cargasCub]]
+      .map(l=>`<div class="stat-line"><span>${l[0]}</span><span class="amt">${fmt(l[1])}</span></div>`).join('')}
+    <div class="stat-line total"><span>TOTAL INGRESOS</span><span class="amt">${fmt(totalIngresos)}</span></div>
+
+    <div class="stat-line" style="font-weight:700; color:var(--brick); margin-top:14px;">Gastos</div>
+    ${gastos.map(l=>`<div class="stat-line"><span>${l[0]}</span><span class="amt">${fmt(l[1])}</span></div>`).join('')}
+    <div class="stat-line total"><span>TOTAL GASTOS</span><span class="amt">${fmt(totalGastos)}</span></div>
+
+    <div class="stat-line result"><span>Resultado del ejercicio</span><span class="amt">${fmt(resultadoAntes)}</span></div>
+    <div class="muted" style="font-size:.76rem; margin-top:4px;">No incluye Impuesto a la Renta (calcúlalo aparte según tu régimen tributario).</div>
+  `;
+  cont.innerHTML = html;
+  return resultadoAntes;
+}
+
+function renderSituacion(resultadoNeto){
+  const map = computeBalances();
+  const cont = document.getElementById('situacionBody');
+
+  const activo1 = debitNormal(map,'1');
+  const activo2 = debitNormal(map,'2');
+  const activo3 = debitNormal(map,'3');
+  const totalActivo = activo1 + activo2 + activo3;
+
+  const pasivo = creditNormal(map,'4');
+
+  const patrimonio = creditNormal(map,'5');
+  const totalPatrimonio = patrimonio + resultadoNeto;
+
+  const totalPP = pasivo + totalPatrimonio;
+  const diff = totalActivo - totalPP;
+
+  cont.innerHTML = `
+    <div class="stat-line" style="font-weight:700; color:var(--ledger);">Activo</div>
+    <div class="stat-line"><span>Elemento 1 · Disponible y exigible</span><span class="amt">${fmt(activo1)}</span></div>
+    <div class="stat-line"><span>Elemento 2 · Realizable</span><span class="amt">${fmt(activo2)}</span></div>
+    <div class="stat-line"><span>Elemento 3 · Inmovilizado</span><span class="amt">${fmt(activo3)}</span></div>
+    <div class="stat-line total"><span>TOTAL ACTIVO</span><span class="amt">${fmt(totalActivo)}</span></div>
+
+    <div class="stat-line" style="font-weight:700; color:var(--brick); margin-top:14px;">Pasivo</div>
+    <div class="stat-line"><span>Elemento 4</span><span class="amt">${fmt(pasivo)}</span></div>
+    <div class="stat-line total"><span>TOTAL PASIVO</span><span class="amt">${fmt(pasivo)}</span></div>
+
+    <div class="stat-line" style="font-weight:700; color:var(--gold-2); margin-top:14px;">Patrimonio</div>
+    <div class="stat-line"><span>Elemento 5</span><span class="amt">${fmt(patrimonio)}</span></div>
+    <div class="stat-line"><span>Resultado del ejercicio</span><span class="amt">${fmt(resultadoNeto)}</span></div>
+    <div class="stat-line total"><span>TOTAL PATRIMONIO</span><span class="amt">${fmt(totalPatrimonio)}</span></div>
+
+    <div class="stat-line result" style="margin-top:14px;"><span>TOTAL PASIVO + PATRIMONIO</span><span class="amt">${fmt(totalPP)}</span></div>
+    <div class="stat-line"><span class="muted">Diferencia (debe ser 0)</span><span class="amt" style="color:${Math.abs(diff)<0.01 ? 'var(--ledger-2)':'var(--brick)'}">${fmt(diff)}</span></div>
+  `;
+
+  const chip = document.getElementById('checkVal');
+  chip.textContent = fmt(totalActivo);
+  chip.className = 'val ' + (Math.abs(diff) < 0.01 ? 'ok' : 'bad');
+}
+
+/* ================= RESPALDO (exportar / importar) ================= */
+document.getElementById('btnExportar').addEventListener('click', ()=>{
+  const blob = new Blob([JSON.stringify(registros, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'respaldo-libro-caja-' + new Date().toISOString().slice(0,10) + '.json';
+  a.click();
+  URL.revokeObjectURL(url);
+  mostrarToast('Respaldo descargado');
+});
+
+document.getElementById('btnImportar').addEventListener('click', ()=>{
+  document.getElementById('fileImportar').click();
+});
+document.getElementById('fileImportar').addEventListener('change', (e)=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try{
+      const datos = JSON.parse(reader.result);
+      if(!Array.isArray(datos)) throw new Error('formato inválido');
+      registros = datos;
+      guardarRegistros();
+      renderAll();
+      mostrarToast('Respaldo importado: ' + registros.length + ' registros');
+    }catch(err){
+      mostrarToast('El archivo no es un respaldo válido.');
+    }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+});
+
+/* ================= SERVICE WORKER (uso offline) ================= */
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{
+    navigator.serviceWorker.register('service-worker.js').catch(()=>{});
+  });
+}
+
+cargarRegistros();
+</script>
+</body>
+</html>
