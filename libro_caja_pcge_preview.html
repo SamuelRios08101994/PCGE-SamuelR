@@ -428,21 +428,21 @@ const STORAGE_KEY = 'registros_caja_pcge';
 
 // Almacenamiento LOCAL del dispositivo (localStorage): los datos quedan
 // guardados en este celular/navegador, no dependen de ninguna cuenta externa.
-function cargarRegistros(){
+async function cargarRegistros(){
   try{
-    const raw = localStorage.getItem(STORAGE_KEY);
-    registros = raw ? JSON.parse(raw) : [];
+    const res = await window.storage.get(STORAGE_KEY, false);
+    registros = res && res.value ? JSON.parse(res.value) : [];
   }catch(e){
     registros = [];
   }
   renderAll();
 }
 
-function guardarRegistros(){
+async function guardarRegistros(){
   try{
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(registros));
+    await window.storage.set(STORAGE_KEY, JSON.stringify(registros), false);
   }catch(e){
-    mostrarToast('No se pudo guardar en este dispositivo.');
+    mostrarToast('No se pudo guardar. Intenta de nuevo.');
   }
 }
 
@@ -577,7 +577,7 @@ function mostrarToast(msg){
 }
 
 /* ================= REGISTRAR ================= */
-document.getElementById('btnRegistrar').addEventListener('click', ()=>{
+document.getElementById('btnRegistrar').addEventListener('click', async ()=>{
   const cuenta = buscCuenta.getCode();
   const contra = buscContra.getCode();
   const monto = parseFloat(document.getElementById('montoInput').value);
@@ -597,7 +597,7 @@ document.getElementById('btnRegistrar').addEventListener('click', ()=>{
     cuenta, contra, monto, tipo: tipoActual, obs
   };
   registros.push(reg);
-  guardarRegistros();
+  await guardarRegistros();
 
   document.getElementById('montoInput').value = '';
   document.getElementById('obsInput').value = '';
